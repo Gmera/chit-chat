@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+		body{
+			//background-color:black
+		}
+		h1.title{
+			border: none;
+			color: black;
+			text-align: center;
+			font-size: 80px;
+			font-family: Lucida Console, Monospace;
+			color: Green;
+		}
+		div.color{
+			background-color: #2AE91A;
+		}
+		div.chatroomTitle{
+			font-size: 32px;
+			background: #AAAAAA;
+			text-align: center;
+			with: 50%;
+			height: 75%;
+		}
+		div.ChatRoomSelect{
+			background: #7FFFFF;
+			border: none;
+			margin-top: 10%;
+			margin-bottom: 10px;
+			margin-right: 10%;
+			margin-left: 10%;
+		}
+		div.divRoom{
+			font-family: Lucida Console, Monospace;
+			padding: 10px;
+			text-decoration: none;
+			font-size: 16px;
+		}
+		div.ChatRoomButtons{
+			border: none;
+			display: inline-block;
+			text-align: center;
+			top: 10;
+			width: 100%;
+		}
+		div.buttonSelect{
+			border: none;
+			margin-right: 10%;
+			margin-left: 10%;
+		}
+		.intro{
+			padding: 15px 32px;
+			text-align: center;
+			font-size: 16px;
+		}
+		.input{
+			border: none;
+			color: black;
+			padding: 15px 16px;
+			text-align: left;
+			font-size: 16px;
+			font-family: sans-serif;
+		}
+		.input2{
+			border: 1px solid black;
+			color: black;
+			padding: 15px 16px;
+			text-align: left;
+			font-size: 16px;
+			font-family: sans-serif;
+			margin-left: 10px;
+		}
+		.input3{
+			border: 1px solid black;
+			color: black;
+			padding: 15px 16px;
+			text-align: left;
+			font-size: 16px;
+			font-family: sans-serif;
+		}
+		.button{
+			background-color: #008CBA; /* Blue */
+			border: none;
+			color: white;
+			padding: 15px 32px;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 16px;
+		}
+		.warning{
+			border: none;
+			color: red;
+			padding: 30px 0px;
+			text-decoration: none;
+			font-size: 18px;
+			text-align: center;
+		}
+		.row{
+			content: "";
+			display: table;
+			clear: both;
+		}
+		.column{
+			float: left;
+			width: 50%;
+		}
+		.left {
+			width: 25%;
+		}
+		.right{
+			width: 75%;
+		}
+		</style>
+		<title>Chit-Chat</title>
+	</head>
+	<script src = "/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io();
+		var user;
+		var roomSelected;
+		//Tag API
+		
+		function setUsername(){
+			var tmp = document.getElementById('name').value;
+			if(tmp)socket.emit('setUsername',document.getElementById('name').value);
+		}
+		socket.on('userExist',(data)=>{
+			document.getElementById('error-container').innerHTML = data;
+		})
+		socket.on('userSet',(data)=>{
+			user = data.username;
+			socket.newUserName = data.username;
+			displayRooms(data.rooms);
+		});
+		//Body API
+		function displayRooms(rooms){
+			var chats = "";
+			for(room in rooms){
+chats+='<div class="divRoom" id="'+room+'" onclick="selectDiv(this.id)"><b>Chat:</b>'+room+'</div>';
+			}
+			document.body.innerHTML = '<div class="ChatRoomSelect">'+chats+'</div>\
+<div class="ChatRoomButtons">\
+<button type="button" class="button" name="Refresh" onclick="refreshRooms()">Refresh</button>\
+<button type="button" class="button" name="CreateR" onclick="createRoom()">Create room</button>\
+<button type="button" class="button" name="Room" onclick="joinRoom(roomSelected)">Join room</button>\
+			</div>';
+		}
+		function createRoom(){
+			document.body.innerHTML = '<div><div class="ChatRoomSelect">\
+			<b class="input">Chat name:</b><input class="input2" type="text" id="roomId" value=""></div>\
+			<div class="buttonSelect">\
+<button type="button" class="button" name="Cancel" onclick="refreshRooms()">Cancel</button>\
+<button type="button" class="button" name="Create"\
+ onclick="joinRoom(document.getElementById(`roomId`).value)">Create</button></div></div>';
+		}
+		function loadChatRoom(room){
+			document.body.innerHTML = '<div class="chatroomTitle" id="chatroomTitle">\
+<b>Welcome to: </b>'+room+'</div><div class="row">\
+	<div class="chatRoom column" id="chatRoom"></div>\
+	<div class="column"><input class="input3" type="text" id="message"><br>\
+<button type="button" class="button" name="Send" onclick="sendmessage()">Send</button>\
+<button type="button" class="button" name="Exit" onclick="refreshRooms()">Exit chat</button></div></div>'
+		}
+		//ROOMS API
+		function refreshRooms(){
+			socket.emit('getrooms',roomSelected);
+			roomSelected=null;
+		}
+		socket.on('sendingrooms',(rooms)=>{
+			displayRooms(rooms);
+		});
+		function joinRoom(room){
+			if(room){
+				socket.emit('createroom',room);
+				loadChatRoom(room);
+				roomSelected=room;
+			}
+		}
+		//Message API
+		function sendmessage(){
+			var msg = document.getElementById('message').value;
+			if(msg){
+				socket.emit('groupmsg',{message: msg, user: user, room:roomSelected});
+			}
+			document.getElementById('message').value="";
+		}
+		socket.on('newmsg',(data)=>{
+				document.getElementById('chatRoom').innerHTML+= '<div><b>'+data.user+
+				'</b>: '+data.message+'</div>';
+			
+		});
+		//Select
+		function selectDiv(id){
+			var elems = document.querySelectorAll(".divRoom");
+			[].forEach.call(elems, function(el) {
+				el.classList.remove("color");
+			});
+			document.getElementById(id).classList.add("color");
+			roomSelected=id;
+		}
+	</script>
+	<body>
+		<h1 class="title">Chit-Chat</h1>
+		<div class="intro">
+		<input type = "text" class="input" id="name" value = "" placeholder = "Enter tag">
+		<button type = "button" class="button" name="button" onclick="setUsername()">
+			Join Server
+		</button>
+		</div>
+		<div id="error-container" class="warning">
+			Disclaimer: Please refrain from sharing personal information, 
+			do not use your real name or vulgar terms and keep discussions civilized.
+		</div>
+	</body>
+</html>
